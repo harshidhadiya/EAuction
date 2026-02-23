@@ -1,11 +1,4 @@
-using System.Text;
-using FluentValidation;
-using FluentValidation.AspNetCore;
 using MACUTION.Validators;
-using Microsoft.AspNetCore.Authentication.BearerToken;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args); 
 builder.Services.AddSingleton<PasswordHasher<Object>,PasswordHasher<object>>();
@@ -33,6 +26,7 @@ builder.Services
                     Encoding.UTF8.GetBytes(builder.Configuration["jwt:key"]))
         };
 });
+// changes by harshid home laptop
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
