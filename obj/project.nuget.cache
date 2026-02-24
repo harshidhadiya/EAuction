@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "GXR+DeKr1/U=",
+  "dgSpecHash": "oKOqm/Ti/m0=",
   "success": true,
   "projectFilePath": "D:\\Codes_pracitce\\MACUTION\\MACUTION.csproj",
   "expectedPackageFiles": [
@@ -9,6 +9,8 @@
     "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\fluentvalidation.dependencyinjectionextensions\\12.1.1\\fluentvalidation.dependencyinjectionextensions.12.1.1.nupkg.sha512",
     "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\10.0.3\\microsoft.aspnetcore.authentication.jwtbearer.10.0.3.nupkg.sha512",
     "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\microsoft.aspnetcore.identity\\2.3.9\\microsoft.aspnetcore.identity.2.3.9.nupkg.sha512",
+    "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\microsoft.aspnetcore.jsonpatch\\10.0.3\\microsoft.aspnetcore.jsonpatch.10.0.3.nupkg.sha512",
+    "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\microsoft.aspnetcore.mvc.newtonsoftjson\\10.0.3\\microsoft.aspnetcore.mvc.newtonsoftjson.10.0.3.nupkg.sha512",
     "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\microsoft.extensions.apidescription.server\\10.0.0\\microsoft.extensions.apidescription.server.10.0.0.nupkg.sha512",
     "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\microsoft.identitymodel.abstractions\\8.16.0\\microsoft.identitymodel.abstractions.8.16.0.nupkg.sha512",
     "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\microsoft.identitymodel.jsonwebtokens\\8.16.0\\microsoft.identitymodel.jsonwebtokens.8.16.0.nupkg.sha512",
@@ -17,6 +19,8 @@
     "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\microsoft.identitymodel.protocols.openidconnect\\8.0.1\\microsoft.identitymodel.protocols.openidconnect.8.0.1.nupkg.sha512",
     "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\microsoft.identitymodel.tokens\\8.16.0\\microsoft.identitymodel.tokens.8.16.0.nupkg.sha512",
     "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\microsoft.openapi\\2.4.1\\microsoft.openapi.2.4.1.nupkg.sha512",
+    "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",
+    "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\newtonsoft.json.bson\\1.0.2\\newtonsoft.json.bson.1.0.2.nupkg.sha512",
     "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\serilog\\4.3.1\\serilog.4.3.1.nupkg.sha512",
     "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\swashbuckle.aspnetcore\\10.1.4\\swashbuckle.aspnetcore.10.1.4.nupkg.sha512",
     "C:\\Users\\Harshid Hadiya\\.nuget\\packages\\swashbuckle.aspnetcore.swagger\\10.1.4\\swashbuckle.aspnetcore.swagger.10.1.4.nupkg.sha512",

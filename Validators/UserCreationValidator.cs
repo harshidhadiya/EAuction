@@ -11,7 +11,7 @@ namespace MACUTION.Validators
         {
             RuleFor(x => x.Name).Custom((name, context) =>
             {
-                
+
                 if (String.IsNullOrEmpty(name))
                 {
                     context.AddFailure("Name", "Empty CanNot Be Accepted Here");
@@ -21,17 +21,22 @@ namespace MACUTION.Validators
                 {
                     context.AddFailure("Lenght Must contain more then 3 lenght ");
                 }
-                return ;
+                return;
             });
             RuleFor(x => x.password).NotEmpty().WithMessage("password must filled up");
-            RuleFor(x=>x.role).NotEmpty().When(x=>{
-
-                if (x.role!="USER" || x.role!="ADMIN")
-                {
-                    return true;
-                }
-                return false;
-            }).WithMessage("either role should be user or admin");
+            RuleFor(x => x.role)
+                                .NotEmpty()
+                                .Must(role => role == "USER" || role == "ADMIN")
+                                .WithMessage("Role must be either USER or ADMIN");
+        }
+    }
+    public class changePasswordValidators : AbstractValidator<changePasswordDto>
+    {
+        public changePasswordValidators()
+        {
+         RuleFor(x=>x.password).NotEmpty().WithMessage("password should not be empty okay");
+         RuleFor(x=>x.ConfirmPassword).NotEmpty().WithMessage("Confirm Password Couldn't Empty");
+         RuleFor(x=>x.password).Equal(y=>y.ConfirmPassword).WithErrorCode("401").WithMessage("Your Confirm Password couldn't match with the Password Field");
         }
     }
 }

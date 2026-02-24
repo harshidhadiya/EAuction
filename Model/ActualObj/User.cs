@@ -10,16 +10,20 @@ namespace MACUTION.Model.ActualObj
             this.hash=_hash;
             this.Id=Guid.NewGuid().ToString("N");
         }
-    public string Id{get;private set;}
+    public String Id{get;private set;}
     
-    private string password;
-    public string Name{get;  set;}
-    public string role{get;set;}="USER";
-    public async Task setGenerateAndSetPassword(string pass)
+    private String password;
+    public String Name{get;  set;}
+    public String role{get;set;}="USER";
+    public async Task setGenerateAndSetPassword(String pass)
         {
         var result = hash.HashPassword(new object(),pass);
         password = result;
             
+        }
+        public String getPassword()
+        {
+            return password;
         }
  }   
 }
