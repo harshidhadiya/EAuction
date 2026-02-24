@@ -1,4 +1,10 @@
+using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using MACUTION.Validators;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args); 
 builder.Services.AddSingleton<PasswordHasher<Object>,PasswordHasher<object>>();
