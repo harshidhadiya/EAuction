@@ -2,10 +2,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using MACUTION.Data;
 using MACUTION.Validators;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Name;
 
@@ -19,6 +21,7 @@ builder.Services.AddControllers();
 builder.Services.AddValidatorsFromAssemblyContaining<UserCreationValidators>();
 builder.Services.AddValidatorsFromAssemblyContaining<changePasswordValidators>();
 builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddDbContext<MacutionDatabase>(option=>option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services
     .AddAuthentication(opiton =>
     {
