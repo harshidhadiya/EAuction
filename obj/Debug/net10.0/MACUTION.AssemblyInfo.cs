@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MACUTION")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ad207fcba6d5e99f19567ae70a2f4637286a0919")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c786b712466a758dbdc842198eb3b60bce92315c")]
 [assembly: System.Reflection.AssemblyProductAttribute("MACUTION")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MACUTION")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
