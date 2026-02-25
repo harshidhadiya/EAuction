@@ -41,7 +41,7 @@ namespace MACUTION.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("Image");
+                    b.ToTable("Images");
                 });
 
             modelBuilder.Entity("MACUTION.Data.Product", b =>
@@ -69,7 +69,7 @@ namespace MACUTION.Migrations
 
                     b.HasIndex("user_id");
 
-                    b.ToTable("Product");
+                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("MACUTION.Data.User", b =>
@@ -121,7 +121,7 @@ namespace MACUTION.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("User");
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("MACUTION.Data.Verifier", b =>

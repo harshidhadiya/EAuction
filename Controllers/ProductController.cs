@@ -1,9 +1,8 @@
-using System.Reflection.Metadata.Ecma335;
-using MACUTION.Model;
+using MACUTION.Data;
 using MACUTION.Model.Dto;
-using MACUTION.Model.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace MACUTION.Controllers
 {
@@ -12,6 +11,13 @@ namespace MACUTION.Controllers
    [Authorize(Policy ="user")]
     public class productController : ControllerBase
     {
+        private readonly MacutionDatabase _db;
+
+        public productController(MacutionDatabase db)
+        {
+            _db = db;
+        }
+
     //   creation of the product  
      [HttpPost("addproduct")]
      public ActionResult createProduct(productDto product)
@@ -21,20 +27,51 @@ namespace MACUTION.Controllers
             {
                 return BadRequest("Token Not Content Id ");
             }
-             var currentUser = Users.allUser.Where(user => user.Id == Id).FirstOrDefault();
+
+            if (!int.TryParse(Id, out var userId))
+            {
+                return BadRequest("Token Id is not valid.");
+            }
+
+            var currentUser = _db.Users
+                .FirstOrDefault(user => user.Id == userId);
+
             if (currentUser == null)
             {
                 return BadRequest("Current Id relate User Not Exist");
             }
-            var products= Products.allProduct.Where(x=>x.NameOfProduct==product.Name).Select(x=>x.NameOfProduct).FirstOrDefault();
-            if (products != null)
+
+            var existingProduct = _db.Products
+                .FirstOrDefault(x => x.product_name == product.Name && x.user_id == currentUser.Id);
+
+            if (existingProduct != null)
             {
                 return BadRequest("You keep in the mind that you can't store the same name products okay ");
             }
-            var createdproduct=new Product(product.Name,product.date,currentUser.Id,product.Description);
 
-            Products.allProduct.Add(createdproduct);
-            return Created("",createdproduct);
+            if (!DateTime.TryParse(product.date, out var buyDate))
+            {
+                return BadRequest("Buy date is not in correct format.");
+            }
+
+            var createdproduct = new Product
+            {
+                product_name = product.Name,
+                Buy_Date = buyDate,
+                user_id = currentUser.Id,
+                creation_date = DateTime.UtcNow
+            };
+
+            _db.Products.Add(createdproduct);
+            _db.SaveChanges();
+
+            return Created("", new
+            {
+                name = createdproduct.product_name,
+                date = createdproduct.Buy_Date,
+                id = createdproduct.Id,
+                userId = createdproduct.user_id
+            });
         }
         [HttpGet("getproducts")]
         public ActionResult getAllProduct()
@@ -44,71 +81,131 @@ namespace MACUTION.Controllers
             {
                 return BadRequest("Token Not Content Id ");
             }
-             var currentUser = Users.allUser.Where(user => user.Id == Id).FirstOrDefault();
+
+            if (!int.TryParse(Id, out var userId))
+            {
+                return BadRequest("Token Id is not valid.");
+            }
+
+            var currentUser = _db.Users
+                .FirstOrDefault(user => user.Id == userId);
+
             if (currentUser == null)
             {
                 return BadRequest("Current Id relate User Not Exist");
             }
-            var AllProduct=Products.allProduct.Where(product=>product.UserId==Id).Select(x=>new {Name=x.NameOfProduct,date=x.BuyDate,verified=x.verified.isVerified,id=x.ProductId,user=x.UserId,desc=x.Description}).ToArray();
-            
-          
-            return Ok(new {product=AllProduct});
+
+            var allProducts = _db.Products
+                .Include(p => p.verifier)
+                .Where(p => p.user_id == currentUser.Id)
+                .Select(x => new
+                {
+                    Name = x.product_name,
+                    date = x.Buy_Date,
+                    verified = x.verifier != null && x.verifier.isverified,
+                    id = x.Id,
+                    user = x.user_id,
+                    desc = x.verifier != null ? x.verifier.description : null
+                })
+                .ToArray();
+
+            return Ok(new { product = allProducts });
         }
         [HttpDelete("deleteproduct/{id}")]
-        public ActionResult deleteProduct(string id)
+        public ActionResult deleteProduct(int id)
         {
             var Id = User.Claims.Where(x => x.Type == "ID").FirstOrDefault()?.Value;
             if (Id == null)
             {
                 return BadRequest("Token Not Content Id ");
             }
-             var currentUser = Users.allUser.Where(user => user.Id == Id).FirstOrDefault();
+
+            if (!int.TryParse(Id, out var userId))
+            {
+                return BadRequest("Token Id is not valid.");
+            }
+
+            var currentUser = _db.Users
+                .FirstOrDefault(user => user.Id == userId);
+
             if (currentUser == null)
             {
                 return BadRequest("Current Id relate User Not Exist");
             }
-            var product=Products.allProduct.Where(product=>product.UserId==Id && product.ProductId == id).FirstOrDefault();
+
+            var product = _db.Products
+                .FirstOrDefault(product => product.user_id == currentUser.Id && product.Id == id);
+
             if (product == null)
             {
                 return BadRequest("May Be This Product Doesn't exist or You are not ownere of this product");
             }
 
-            Products.allProduct.Remove(product);
+            _db.Products.Remove(product);
+            _db.SaveChanges();
             
-            return Ok(new {message=$"Deleted {product.NameOfProduct} success fully"});
+            return Ok(new { message = $"Deleted {product.product_name} success fully" });
         }
         [HttpPatch("updateproduct/{id}")]
-        public ActionResult updateProduct(string id,changeProductDto cp)
+        public ActionResult updateProduct(int id,changeProductDto cp)
         {
              var Id = User.Claims.Where(x => x.Type == "ID").FirstOrDefault()?.Value;
             if (Id == null)
             {
                 return BadRequest("Token Not Content Id ");
             }
-             var currentUser = Users.allUser.Where(user => user.Id == Id).FirstOrDefault();
+
+            if (!int.TryParse(Id, out var userId))
+            {
+                return BadRequest("Token Id is not valid.");
+            }
+
+            var currentUser = _db.Users
+                .FirstOrDefault(user => user.Id == userId);
+
             if (currentUser == null)
             {
                 return BadRequest("Current Id relate User Not Exist");
             }
-            var product=Products.allProduct.Where(product=>product.UserId==Id && product.ProductId == id).FirstOrDefault();
+
+            var product = _db.Products
+                .FirstOrDefault(product => product.user_id == currentUser.Id && product.Id == id);
+
             if (product == null)
             {
                 return BadRequest("May Be This Product Doesn't exist or You are not ownere of this product");
             }
             if (cp.BuyDate != null)
             {
-                product.changeDate(cp.BuyDate);
+                if (!DateTime.TryParse(cp.BuyDate, out var newBuyDate))
+                {
+                    return BadRequest("Buy date is not in correct format.");
+                }
+
+                product.Buy_Date = newBuyDate;
 
             }
-            if (cp.Description!=null)
-            {
-                product.changeDescription(cp.Description);
-            }
+
             if (cp.NameOfProduct != null)
             {
-                product.changeName(cp.NameOfProduct);
+                product.product_name = cp.NameOfProduct;
             }
-            return Ok(new {message="Your Updated Data",data=new{name=product.NameOfProduct,id=product.ProductId,descripiton=product.Description,date=product.BuyDate,userid=product.UserId,verified=product.verified.isVerified}});
+
+            _db.SaveChanges();
+
+            return Ok(new
+            {
+                message = "Your Updated Data",
+                data = new
+                {
+                    name = product.product_name,
+                    id = product.Id,
+                    description = product.verifier != null ? product.verifier.description : null,
+                    date = product.Buy_Date,
+                    userid = product.user_id,
+                    verified = product.verifier != null && product.verifier.isverified
+                }
+            });
         }
     }
 }

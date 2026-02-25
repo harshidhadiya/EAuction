@@ -1,17 +1,12 @@
-using System.Diagnostics.SymbolStore;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq.Expressions;
-using System.Runtime.Intrinsics.Arm;
 using System.Security.Claims;
-using System.Text;
-using MACUTION.Model.ActualObj;
+using MACUTION.Data;
 using MACUTION.Model.Dto;
 using MACUTION.Model.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using Name;
 
 namespace MACUTION.Controllers
@@ -23,57 +18,102 @@ namespace MACUTION.Controllers
         private readonly ILogger<userController> _logger;
         private readonly ItokenGeneration token;
         private PasswordHasher<object> hash;
-        public userController(ILogger<userController> logger, PasswordHasher<object> hash, ItokenGeneration token)
+        private readonly MacutionDatabase _db;
+
+        public userController(
+            ILogger<userController> logger,
+            PasswordHasher<object> hash,
+            ItokenGeneration token,
+            MacutionDatabase db)
         {
             this._logger = logger;
             this.hash = hash;
             this.token = token;
+            this._db = db;
         }
         [HttpPost("createUser")]
         public async Task<ActionResult> CreateUser(UserCreation user)
         {
-            var ExistUser = Users.allUser.Where(x => x.Name == user.Name).FirstOrDefault();
-            if (ExistUser != null)
+            // Check if email already exists because it must be unique.
+            var existingUser = await _db.Users
+                .FirstOrDefaultAsync(x => x.Email == user.Email);
+
+            if (existingUser != null)
             {
-                return BadRequest("sorry on this name user already exist");
+                return BadRequest("User already exists with this email");
             }
 
-            var createUser = new User(hash) { Name = user.Name, role = user.role };
-            await createUser.setGenerateAndSetPassword(user.password);
-            Users.allUser.Add(createUser);
+            var newUser = new User
+            {
+                Name = user.Name,
+                Email = user.Email,
+                MobileNumber = user.MobileNumber,
+                Address = user.Address,
+                ProfileImageUrl = user.ProfileImageUrl ?? string.Empty,
+                role = user.role,
+                createdAt = DateTime.UtcNow
+            };
 
-            return Created("/DATA", new { name = user.Name, role = user.role, token = token.getToken(user.Name, user.role.ToUpperInvariant(), createUser.Id) });
+            var hashedPassword = hash.HashPassword(new object(), user.Password);
+            newUser.setPassword(hashedPassword);
+
+            _db.Users.Add(newUser);
+            await _db.SaveChangesAsync();
+
+            var generatedToken = token.getToken(
+                newUser.Name,
+                newUser.role.ToUpperInvariant(),
+                newUser.Id.ToString()
+            );
+
+            return Created("/DATA", new { name = newUser.Name, role = newUser.role, token = generatedToken });
         }
         [HttpGet("getAllUser")]
         [Authorize(Policy = "user")]
-        public ActionResult getAllUser()
+        public async Task<ActionResult> getAllUser()
         {
-           
-            var ExistUser = Users.allUser.Select(x => new { x.Name, x.role }).ToArray();
-            return Ok(new { ExistUser });
+            var users = await _db.Users
+                .Select(x => new { x.Name, x.role })
+                .ToListAsync();
+
+            return Ok(new { ExistUser = users });
         }
 
         [HttpPost("login")]
-        public ActionResult Login(UserCreation user)
+        public ActionResult Login(UserLoginDto user)
         {
-            var existUser = Users.allUser.Where(y => y.Name == user.Name).FirstOrDefault();
+            var existUser = _db.Users
+                .FirstOrDefault(y => y.Email == user.Email);
+
             if (existUser == null)
             {
-                return BadRequest(new { msg = "User Not Exist on this name" });
+                return BadRequest(new { msg = "User Not Exist with this email" });
             }
-            var verifyPass = hash.VerifyHashedPassword(new object(), existUser.getPassword(), user.password);
+
+            var verifyPass = hash.VerifyHashedPassword(
+                new object(),
+                existUser.Password,
+                user.Password
+            );
+
             if (verifyPass == PasswordVerificationResult.Failed)
             {
                 return BadRequest(new { msg = "Incorrecte Password" });
             }
 
-            if (user.role != existUser.role)
+            if (user.Role != existUser.role)
             {
                 return BadRequest(new { msg = "Role Din't Match" });
             }
 
 
-            return Ok(new { token = token.getToken(user.Name, user.role.ToUpperInvariant(), existUser.Id), Name = user.Name, Id = existUser.Id });
+            var generatedToken = token.getToken(
+                existUser.Name,
+                user.Role.ToUpperInvariant(),
+                existUser.Id.ToString()
+            );
+
+            return Ok(new { token = generatedToken, Name = existUser.Name, Id = existUser.Id });
 
         }
         [HttpPost("changepassword")]
@@ -88,18 +128,29 @@ namespace MACUTION.Controllers
             Console.WriteLine($"Id= {Id}");
 
 
-            var currentUser = Users.allUser.Where(user => user.Id == Id).FirstOrDefault();
+            if (!int.TryParse(Id, out var userId))
+            {
+                return BadRequest("Token Id is not valid.");
+            }
+
+            var currentUser = await _db.Users
+                .FirstOrDefaultAsync(user => user.Id == userId);
+
             if (currentUser == null)
             {
                 return BadRequest("Current Id relate User Not Exist");
             }
 
-            await currentUser.setGenerateAndSetPassword(changePass.password);
-            return Ok(currentUser);
+            var hashedPassword = hash.HashPassword(new object(), changePass.password);
+            currentUser.setPassword(hashedPassword);
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new { Id = currentUser.Id, Name = currentUser.Name, role = currentUser.role });
         }
         [HttpPatch("changeprofile")]
         [Authorize]
-        public ActionResult ChangeProfile(changeProfileDto docs)
+        public async Task<ActionResult> ChangeProfile(changeProfileDto docs)
         {
 
             var Id = User.Claims.Where(x => x.Type == "ID").FirstOrDefault()?.Value;
@@ -108,7 +159,14 @@ namespace MACUTION.Controllers
                 return BadRequest("Token Not Content Id ");
             }
 
-            var currentUser = Users.allUser.Where(user => user.Id == Id).FirstOrDefault();
+            if (!int.TryParse(Id, out var userId))
+            {
+                return BadRequest("Token Id is not valid.");
+            }
+
+            var currentUser = await _db.Users
+                .FirstOrDefaultAsync(user => user.Id == userId);
+
             if (currentUser == null)
             {
                 return BadRequest("Current Id relate User Not Exist");
@@ -118,12 +176,40 @@ namespace MACUTION.Controllers
             string tokens ="";
 
            
-            if (docs.Name != "")
+            if (!string.IsNullOrWhiteSpace(docs.Name))
             {
                 currentUser.Name = docs.Name;
             }
-                tokens=token.getToken(currentUser.Name,currentUser.role,currentUser.Id);
-            return Ok(new {User=new {Name=currentUser.Name,role=currentUser.role},token=tokens});
+
+            if (!string.IsNullOrWhiteSpace(docs.Email))
+            {
+                currentUser.Email = docs.Email;
+            }
+
+            if (docs.MobileNumber.HasValue)
+            {
+                currentUser.MobileNumber = docs.MobileNumber.Value;
+            }
+
+            if (!string.IsNullOrWhiteSpace(docs.Address))
+            {
+                currentUser.Address = docs.Address;
+            }
+
+            if (!string.IsNullOrWhiteSpace(docs.ProfileImageUrl))
+            {
+                currentUser.ProfileImageUrl = docs.ProfileImageUrl;
+            }
+
+            await _db.SaveChangesAsync();
+
+            tokens = token.getToken(
+                currentUser.Name,
+                currentUser.role.ToUpperInvariant(),
+                currentUser.Id.ToString()
+            );
+
+            return Ok(new { User = new { Name = currentUser.Name, role = currentUser.role }, token = tokens });
         }
         [HttpGet("getprofile")]
         [Authorize(Policy = "user")]
@@ -132,13 +218,20 @@ namespace MACUTION.Controllers
             Console.WriteLine("enered");
             var Id = User.Claims.Where(x => x.Type == "ID").FirstOrDefault()?.Value;
 
-            var currentUser = Users.allUser.Where(user => user.Id == Id).FirstOrDefault();
+            if (!int.TryParse(Id, out var userId))
+            {
+                return BadRequest("Token Id is not valid.");
+            }
+
+            var currentUser = _db.Users
+                .FirstOrDefault(user => user.Id == userId);
+
             if (currentUser == null)
             {
                 return BadRequest("Current Id relate User Not Exist");
             }
             
-            return Ok(new{Id=currentUser.Id,Name=currentUser.Name,role=currentUser.role});
+            return Ok(new { Id = currentUser.Id, Name = currentUser.Name, role = currentUser.role });
         }
 
     }

@@ -1,4 +1,3 @@
-using System.Data;
 using MACUTION.Data.Config;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,9 +5,9 @@ namespace MACUTION.Data
 {
     public class MacutionDatabase :DbContext
     {
-        public DbSet<Product> products;
-        public DbSet<Image> images;
-        public DbSet<User> users;
+        public DbSet<Product> Products { get; set; }
+        public DbSet<Image> Images { get; set; }
+        public DbSet<User> Users { get; set; }
         public MacutionDatabase(DbContextOptions<MacutionDatabase> options):base(options)
         {        }
 
