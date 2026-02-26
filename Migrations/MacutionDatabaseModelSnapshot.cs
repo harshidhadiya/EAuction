@@ -72,6 +72,35 @@ namespace MACUTION.Migrations
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("MACUTION.Data.Request_admin", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("give_access_person_id")
+                        .HasColumnType("int");
+
+                    b.Property<int>("request_person_id")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("verified_admin")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("give_access_person_id");
+
+                    b.HasIndex("request_person_id")
+                        .IsUnique();
+
+                    b.ToTable("request_Admins");
+                });
+
             modelBuilder.Entity("MACUTION.Data.User", b =>
                 {
                     b.Property<int>("Id")
@@ -110,6 +139,11 @@ namespace MACUTION.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GetDate()");
 
+                    b.Property<bool>("right_to_add")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("role")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -122,6 +156,20 @@ namespace MACUTION.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Address = "Monvel",
+                            Email = "harshid.hadiya@gmail.com",
+                            MobileNumber = 2341,
+                            Name = "hadiya harshid",
+                            Password = "12345",
+                            createdAt = new DateTime(2026, 2, 26, 14, 44, 45, 31, DateTimeKind.Local).AddTicks(8120),
+                            right_to_add = true,
+                            role = "ADMIN"
+                        });
                 });
 
             modelBuilder.Entity("MACUTION.Data.Verifier", b =>
@@ -140,7 +188,7 @@ namespace MACUTION.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
-                    b.Property<int?>("product_id")
+                    b.Property<int>("product_id")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("verificationDate")
@@ -152,12 +200,11 @@ namespace MACUTION.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("product_id")
-                        .IsUnique()
-                        .HasFilter("[product_id] IS NOT NULL");
+                        .IsUnique();
 
                     b.HasIndex("verifier_id");
 
-                    b.ToTable("Verifier");
+                    b.ToTable("verifiers");
                 });
 
             modelBuilder.Entity("MACUTION.Data.Image", b =>
@@ -181,12 +228,31 @@ namespace MACUTION.Migrations
                     b.Navigation("user");
                 });
 
+            modelBuilder.Entity("MACUTION.Data.Request_admin", b =>
+                {
+                    b.HasOne("MACUTION.Data.User", "permission_person")
+                        .WithMany("given_access")
+                        .HasForeignKey("give_access_person_id")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MACUTION.Data.User", "requet_person")
+                        .WithOne("request")
+                        .HasForeignKey("MACUTION.Data.Request_admin", "request_person_id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("permission_person");
+
+                    b.Navigation("requet_person");
+                });
+
             modelBuilder.Entity("MACUTION.Data.Verifier", b =>
                 {
                     b.HasOne("MACUTION.Data.Product", "product")
                         .WithOne("verifier")
                         .HasForeignKey("MACUTION.Data.Verifier", "product_id")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("MACUTION.Data.User", "user")
                         .WithMany("verifiers")
@@ -203,13 +269,16 @@ namespace MACUTION.Migrations
                 {
                     b.Navigation("Images");
 
-                    b.Navigation("verifier")
-                        .IsRequired();
+                    b.Navigation("verifier");
                 });
 
             modelBuilder.Entity("MACUTION.Data.User", b =>
                 {
+                    b.Navigation("given_access");
+
                     b.Navigation("products");
+
+                    b.Navigation("request");
 
                     b.Navigation("verifiers");
                 });

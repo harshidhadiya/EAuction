@@ -6,13 +6,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MACUTION.Migrations
 {
     /// <inheritdoc />
-    public partial class updated : Migration
+    public partial class first11 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "User",
+                name: "Users",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -24,15 +24,16 @@ namespace MACUTION.Migrations
                     ProfileImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: ""),
                     role = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "USER"),
                     Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    createdAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GetDate()")
+                    createdAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GetDate()"),
+                    right_to_add = table.Column<bool>(type: "bit", nullable: false, defaultValue: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_User", x => x.Id);
+                    table.PrimaryKey("PK_Users", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Product",
+                name: "Products",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -44,17 +45,43 @@ namespace MACUTION.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Product", x => x.Id);
+                    table.PrimaryKey("PK_Products", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Product_User_user_id",
+                        name: "FK_Products_Users_user_id",
                         column: x => x.user_id,
-                        principalTable: "User",
+                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Image",
+                name: "request_Admins",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    request_person_id = table.Column<int>(type: "int", nullable: false),
+                    give_access_person_id = table.Column<int>(type: "int", nullable: true),
+                    verified_admin = table.Column<bool>(type: "bit", nullable: false, defaultValue: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_request_Admins", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_request_Admins_Users_give_access_person_id",
+                        column: x => x.give_access_person_id,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_request_Admins_Users_request_person_id",
+                        column: x => x.request_person_id,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Images",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -64,70 +91,85 @@ namespace MACUTION.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Image", x => x.Id);
+                    table.PrimaryKey("PK_Images", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Image_Product_ProductId",
+                        name: "FK_Images_Products_ProductId",
                         column: x => x.ProductId,
-                        principalTable: "Product",
+                        principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Verifier",
+                name: "verifiers",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     verifier_id = table.Column<int>(type: "int", nullable: false),
-                    product_id = table.Column<int>(type: "int", nullable: true),
+                    product_id = table.Column<int>(type: "int", nullable: false),
                     description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     verificationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     isverified = table.Column<bool>(type: "bit", nullable: false, defaultValue: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Verifier", x => x.Id);
+                    table.PrimaryKey("PK_verifiers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Verifier_Product_product_id",
+                        name: "FK_verifiers_Products_product_id",
                         column: x => x.product_id,
-                        principalTable: "Product",
+                        principalTable: "Products",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Verifier_User_verifier_id",
+                        name: "FK_verifiers_Users_verifier_id",
                         column: x => x.verifier_id,
-                        principalTable: "User",
+                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.InsertData(
+                table: "Users",
+                columns: new[] { "Id", "Address", "Email", "MobileNumber", "Name", "Password", "createdAt", "right_to_add", "role" },
+                values: new object[] { 1, "Monvel", "harshid.hadiya@gmail.com", 2341, "hadiya harshid", "12345", new DateTime(2026, 2, 26, 14, 44, 45, 31, DateTimeKind.Local).AddTicks(8120), true, "ADMIN" });
+
             migrationBuilder.CreateIndex(
-                name: "IX_Image_ProductId",
-                table: "Image",
+                name: "IX_Images_ProductId",
+                table: "Images",
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Product_user_id",
-                table: "Product",
+                name: "IX_Products_user_id",
+                table: "Products",
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_User_Email",
-                table: "User",
+                name: "IX_request_Admins_give_access_person_id",
+                table: "request_Admins",
+                column: "give_access_person_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_request_Admins_request_person_id",
+                table: "request_Admins",
+                column: "request_person_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Email",
+                table: "Users",
                 column: "Email",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Verifier_product_id",
-                table: "Verifier",
+                name: "IX_verifiers_product_id",
+                table: "verifiers",
                 column: "product_id",
-                unique: true,
-                filter: "[product_id] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Verifier_verifier_id",
-                table: "Verifier",
+                name: "IX_verifiers_verifier_id",
+                table: "verifiers",
                 column: "verifier_id");
         }
 
@@ -135,16 +177,19 @@ namespace MACUTION.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Image");
+                name: "Images");
 
             migrationBuilder.DropTable(
-                name: "Verifier");
+                name: "request_Admins");
 
             migrationBuilder.DropTable(
-                name: "Product");
+                name: "verifiers");
 
             migrationBuilder.DropTable(
-                name: "User");
+                name: "Products");
+
+            migrationBuilder.DropTable(
+                name: "Users");
         }
     }
 }

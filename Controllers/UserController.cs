@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using MACUTION.Data;
+using MACUTION.Middleware.AddEndpointFilter;
 using MACUTION.Model.Dto;
 using MACUTION.Model.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -17,8 +18,7 @@ namespace MACUTION.Controllers
     {
         private readonly ILogger<userController> _logger;
         private readonly ItokenGeneration token;
-        private PasswordHasher<object> hash;
-        private readonly MacutionDatabase _db;
+        private PasswordHasher<object> hash; private readonly MacutionDatabase _db;
 
         public userController(
             ILogger<userController> logger,
@@ -34,6 +34,7 @@ namespace MACUTION.Controllers
         [HttpPost("createUser")]
         public async Task<ActionResult> CreateUser(UserCreation user)
         {
+
             // Check if email already exists because it must be unique.
             var existingUser = await _db.Users
                 .FirstOrDefaultAsync(x => x.Email == user.Email);
@@ -66,7 +67,7 @@ namespace MACUTION.Controllers
                 newUser.Id.ToString()
             );
 
-            return Created("/DATA", new { name = newUser.Name, role = newUser.role, token = generatedToken });
+            return Created("/api/v1/user/getprofile", new { name = newUser.Name, role = newUser.role, token = generatedToken });
         }
         [HttpGet("getAllUser")]
         [Authorize(Policy = "user")]
@@ -120,15 +121,14 @@ namespace MACUTION.Controllers
         [Authorize]
         public async Task<ActionResult> changePassword(changePasswordDto changePass)
         {
-            var Id = User.Claims.Where(x => x.Type == "ID").FirstOrDefault()?.Value;
+            var Id = HttpContext.Items["id"];
             if (Id == null)
             {
                 return BadRequest("Token Not Content Id ");
             }
-            Console.WriteLine($"Id= {Id}");
 
 
-            if (!int.TryParse(Id, out var userId))
+            if (!int.TryParse(Id.ToString(), out var userId))
             {
                 return BadRequest("Token Id is not valid.");
             }
@@ -149,33 +149,25 @@ namespace MACUTION.Controllers
             return Ok(new { Id = currentUser.Id, Name = currentUser.Name, role = currentUser.role });
         }
         [HttpPatch("changeprofile")]
+        [TypeFilter(typeof(IdVerifier))]
         [Authorize]
         public async Task<ActionResult> ChangeProfile(changeProfileDto docs)
         {
 
-            var Id = User.Claims.Where(x => x.Type == "ID").FirstOrDefault()?.Value;
-            if (Id == null)
-            {
-                return BadRequest("Token Not Content Id ");
-            }
-
-            if (!int.TryParse(Id, out var userId))
-            {
-                return BadRequest("Token Id is not valid.");
-            }
+            var UserId = (int?)HttpContext.Items["UserId"];
 
             var currentUser = await _db.Users
-                .FirstOrDefaultAsync(user => user.Id == userId);
+                .FirstOrDefaultAsync(user => user.Id == UserId);
 
             if (currentUser == null)
             {
                 return BadRequest("Current Id relate User Not Exist");
             }
 
-            
-            string tokens ="";
 
-           
+            string tokens = "";
+
+
             if (!string.IsNullOrWhiteSpace(docs.Name))
             {
                 currentUser.Name = docs.Name;
@@ -213,15 +205,11 @@ namespace MACUTION.Controllers
         }
         [HttpGet("getprofile")]
         [Authorize(Policy = "user")]
+        [TypeFilter(typeof(IdVerifier))]
         public ActionResult getProfile()
         {
-            Console.WriteLine("enered");
-            var Id = User.Claims.Where(x => x.Type == "ID").FirstOrDefault()?.Value;
+            var userId = (int?)HttpContext.Items["UserId"];
 
-            if (!int.TryParse(Id, out var userId))
-            {
-                return BadRequest("Token Id is not valid.");
-            }
 
             var currentUser = _db.Users
                 .FirstOrDefault(user => user.Id == userId);
@@ -230,7 +218,7 @@ namespace MACUTION.Controllers
             {
                 return BadRequest("Current Id relate User Not Exist");
             }
-            
+
             return Ok(new { Id = currentUser.Id, Name = currentUser.Name, role = currentUser.role });
         }
 

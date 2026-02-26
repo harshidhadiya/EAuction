@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using MACUTION.Model.ActualObj;
 using Microsoft.AspNetCore.SignalR;
 
@@ -7,11 +8,16 @@ namespace MACUTION.Model.Dto
     // It matches the important fields from MACUTION.Data.User.
     public class UserCreation
     {
+        required
         public string Name { get; set; }
+        required
         public string Email { get; set; }
+        required
         public int MobileNumber { get; set; }
-        public string Address { get; set; }
-        public string Password { get; set; }
+        required
+         public string Address { get; set; }
+        required
+         public string Password   { get; set; }
         public string ProfileImageUrl { get; set; } = "";
         public string role { get; set; } = "USER";
     }
@@ -19,30 +25,40 @@ namespace MACUTION.Model.Dto
     // This DTO is used only for login.
     public class UserLoginDto
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        required
+        public string Email
+        { get; set; }
+        required public string Password { get; set; }
         public string Role { get; set; } = "USER";
     }
 
     public class changePasswordDto
     {
-        public string password { get; set; }
-        public string ConfirmPassword { get; set; }
+        required
+        public string password
+        { get; set; }
+        required
+        public string ConfirmPassword
+        { get; set; }
 
     }
     public class changeProfileDto
     {
-        public string Name { get; set; }
-        public string Email { get; set; }
+        public string? Name { get; set; }
+        public string? Email { get; set; }
         public int? MobileNumber { get; set; }
-        public string Address { get; set; }
-        public string ProfileImageUrl { get; set; }
+        public string? Address { get; set; }
+        public string? ProfileImageUrl { get; set; }
     }
     public class productDto
     {
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string date { get; set; }
+        required
+        public string Name
+        { get; set; }
+        public string? Description { get; set; }
+        required
+        public string date
+        { get; set; }
     }
     public class changeProductDto
     {
@@ -50,5 +66,5 @@ namespace MACUTION.Model.Dto
         public string? Description { get; set; }
         public string? BuyDate { get; set; }
     }
-    
+
 }

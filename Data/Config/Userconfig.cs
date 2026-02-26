@@ -16,6 +16,7 @@ namespace MACUTION.Data.Config
             option.Property(X=>X.MobileNumber).IsRequired();
             option.Property(x=>x.role).HasDefaultValue("USER");
             option.Property(x=>x.ProfileImageUrl).HasDefaultValue("");
+            option.Property(x=>x.right_to_add).HasDefaultValue(false);
             option.Property(x=>x.Password).IsRequired();
             option.Property(x=>x.Address).IsRequired();
             
