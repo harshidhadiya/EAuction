@@ -1,3 +1,4 @@
+using MACUTION.Data;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -13,6 +14,7 @@ namespace MACUTION.Middleware.AddEndpointFilter
 
         public void OnActionExecuting(ActionExecutingContext context)
         {
+        
            var id =context.HttpContext.Items["id"];
            if (id==null)
            {
@@ -22,6 +24,7 @@ namespace MACUTION.Middleware.AddEndpointFilter
            if (!int.TryParse(id.ToString(), out var userId))
             {
             context.Result=new BadRequestObjectResult(new {status="fail",message="Your Id in Token Is Not valid"});
+            return ;
             }
             Console.WriteLine("your user id"+userId);
            context.HttpContext.Items["UserId"]=userId;

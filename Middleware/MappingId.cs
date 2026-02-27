@@ -12,6 +12,7 @@ namespace MACUTION.Middleware
           var Id = context.User.Claims.Where(x => x.Type == "ID").FirstOrDefault()?.Value;
           Console.WriteLine(Id);
           context.Items["id"]=Id;
+          
           await  _next(context);
         } 
      }

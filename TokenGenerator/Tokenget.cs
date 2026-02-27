@@ -19,7 +19,7 @@ namespace Name
             var claims = new [] {new Claim("Name",name),new Claim(ClaimTypes.Role,role),new Claim("ID",Id)};
             var seckretkey=new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
             var SigningCredentials=new SigningCredentials(seckretkey,SecurityAlgorithms.HmacSha256);
-            var tokenHandler=new JwtSecurityToken(claims:claims,signingCredentials:SigningCredentials,expires:DateTime.UtcNow.AddMinutes(10));
+            var tokenHandler=new JwtSecurityToken(claims:claims,signingCredentials:SigningCredentials,expires:DateTime.UtcNow.AddDays(1));
             return new JwtSecurityTokenHandler().WriteToken(tokenHandler);
         }
     }

@@ -31,5 +31,18 @@ namespace MACUTION.Model.Dto
         public string imageurl{get;set;}="";
         public bool request_accepted{get;set;}=false;
         public string email {get;set;}
+        public bool  addUserAccess{get;set;}=false;
+    }
+   
+    public class acceptResponceDto
+    {
+        public string status{get;set;}
+        public string message{get;set;}
+        public object data{get;set;}
+    }
+    public class restrictionResponceDto
+    {
+        public bool ?add_to_antoher{get;set;}=false;
+        public bool ?delete_verification{get;set;}=false;
     }
 }
