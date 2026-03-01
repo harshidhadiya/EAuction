@@ -344,6 +344,8 @@ D:/Codes_pracitce/MACUTION/bin/Debug/net10.0/runtimes/win-x86/native/Microsoft.D
 /home/harshid/Project_Practice/_net/EAuction/bin/Debug/net10.0/MACUTION.runtimeconfig.json
 /home/harshid/Project_Practice/_net/EAuction/bin/Debug/net10.0/MACUTION.dll
 /home/harshid/Project_Practice/_net/EAuction/bin/Debug/net10.0/MACUTION.pdb
+/home/harshid/Project_Practice/_net/EAuction/bin/Debug/net10.0/AutoMapper.dll
+/home/harshid/Project_Practice/_net/EAuction/bin/Debug/net10.0/AutoMapper.Extensions.Microsoft.DependencyInjection.dll
 /home/harshid/Project_Practice/_net/EAuction/bin/Debug/net10.0/Azure.Core.dll
 /home/harshid/Project_Practice/_net/EAuction/bin/Debug/net10.0/Azure.Identity.dll
 /home/harshid/Project_Practice/_net/EAuction/bin/Debug/net10.0/FluentValidation.dll

@@ -1,33 +1,26 @@
-using MACUTION.Data;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace MACUTION.Middleware.AddEndpointFilter
 {
-    public class IdVerifier : IActionFilter
+    // Changed: IActionFilter -> IAsyncActionFilter for consistency with async pipeline
+    public class IdVerifier : IAsyncActionFilter
     {
-        public void OnActionExecuted(ActionExecutedContext context)
+        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-           
-        }
-
-        public void OnActionExecuting(ActionExecutingContext context)
-        {
-        
-           var id =context.HttpContext.Items["id"];
-           if (id==null)
-           {
-            context.Result=new BadRequestObjectResult(new {status="fail",message="sorry maybe you are unauthorized we are not able to find you"});
-            return ;
-           }
-           if (!int.TryParse(id.ToString(), out var userId))
+            var id = context.HttpContext.Items["id"];
+            if (id == null)
             {
-            context.Result=new BadRequestObjectResult(new {status="fail",message="Your Id in Token Is Not valid"});
-            return ;
+                context.Result = new BadRequestObjectResult(new { status = "fail", message = "sorry maybe you are unauthorized we are not able to find you" });
+                return;
             }
-            Console.WriteLine("your user id"+userId);
-           context.HttpContext.Items["UserId"]=userId;
+            if (!int.TryParse(id.ToString(), out var userId))
+            {
+                context.Result = new BadRequestObjectResult(new { status = "fail", message = "Your Id in Token Is Not valid" });
+                return;
+            }
+            context.HttpContext.Items["UserId"] = userId;
+            await next();
         }
     }
 }

@@ -1,12 +1,11 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using MACUTION.Configuration;
 using MACUTION.Data;
 using MACUTION.Middleware;
 using MACUTION.Middleware.AddEndpointFilter;
 using MACUTION.Validators;
-using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http.Features;
@@ -53,8 +52,9 @@ builder.Services.AddAuthorization(policy =>
     policy.AddPolicy("admin", opt => opt.RequireRole("ADMIN"));
     policy.AddPolicy("user", option => option.RequireRole("USER"));
 });
+// Changed: filter registration for async verification controller
 builder.Services.AddScoped<VerifiedAdminCanVerifyFilter>();
-
+builder.Services.AddAutoMapper(typeof(Automapper));
 var app = builder.Build();
 // // app.UseRouting();
 // app.UseHttpsRedirection();

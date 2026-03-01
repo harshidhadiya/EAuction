@@ -5,12 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MACUTION.Middleware.AddEndpointFilter
 {
-    
-    public class VerifiedAdminCanVerifyFilter : IActionFilter
+    // Changed: IActionFilter -> IAsyncActionFilter for async DB calls (multithread/async)
+    public class VerifiedAdminCanVerifyFilter : IAsyncActionFilter
     {
-        public void OnActionExecuted(ActionExecutedContext context) { }
-
-        public void OnActionExecuting(ActionExecutingContext context)
+        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
             var db = context.HttpContext.RequestServices.GetRequiredService<MacutionDatabase>();
             var id = context.HttpContext.Items["id"];
@@ -24,7 +22,7 @@ namespace MACUTION.Middleware.AddEndpointFilter
                 context.Result = new BadRequestObjectResult(new { status = "fail", message = "Invalid user id in token." });
                 return;
             }
-            var currentUser = db.Users.Include(x => x.request).FirstOrDefault(x => x.Id == userId);
+            var currentUser = await db.Users.AsNoTracking().Include(x => x.request).FirstOrDefaultAsync(x => x.Id == userId);
             if (currentUser == null)
             {
                 context.Result = new NotFoundObjectResult(new { status = "fail", message = "User not found." });
@@ -41,6 +39,7 @@ namespace MACUTION.Middleware.AddEndpointFilter
                 return;
             }
             context.HttpContext.Items["verified_admin_user_id"] = userId;
+            await next();
         }
     }
 }

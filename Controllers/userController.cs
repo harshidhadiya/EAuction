@@ -81,41 +81,24 @@ namespace MACUTION.Controllers
         }
 
         [HttpPost("login")]
-        public ActionResult Login(UserLoginDto user)
+        public async Task<ActionResult> Login(UserLoginDto user)
         {
-            var existUser = _db.Users
-                .FirstOrDefault(y => y.Email == user.Email);
-
+            var existUser = await _db.Users.AsNoTracking().FirstOrDefaultAsync(y => y.Email == user.Email);
             if (existUser == null)
             {
                 return BadRequest(new { msg = "User Not Exist with this email" });
             }
-
-            var verifyPass = hash.VerifyHashedPassword(
-                new object(),
-                existUser.Password,
-                user.Password
-            );
-
+            var verifyPass = hash.VerifyHashedPassword(new object(), existUser.Password, user.Password);
             if (verifyPass == PasswordVerificationResult.Failed)
             {
                 return BadRequest(new { msg = "Incorrecte Password" });
             }
-
             if (user.Role != existUser.role)
             {
                 return BadRequest(new { msg = "Role Din't Match" });
             }
-
-
-            var generatedToken = token.getToken(
-                existUser.Name,
-                user.Role.ToUpperInvariant(),
-                existUser.Id.ToString()
-            );
-
+            var generatedToken = token.getToken(existUser.Name, user.Role.ToUpperInvariant(), existUser.Id.ToString());
             return Ok(new { token = generatedToken, Name = existUser.Name, Id = existUser.Id });
-
         }
         [HttpPost("changepassword")]
         [Authorize]
@@ -206,19 +189,14 @@ namespace MACUTION.Controllers
         [HttpGet("getprofile")]
         [Authorize(Policy = "user")]
         [TypeFilter(typeof(IdVerifier))]
-        public ActionResult getProfile()
+        public async Task<ActionResult> getProfile()
         {
             var userId = (int?)HttpContext.Items["UserId"];
-
-
-            var currentUser = _db.Users
-                .FirstOrDefault(user => user.Id == userId);
-
+            var currentUser = await _db.Users.AsNoTracking().FirstOrDefaultAsync(user => user.Id == userId);
             if (currentUser == null)
             {
                 return BadRequest("Current Id relate User Not Exist");
             }
-
             return Ok(new { Id = currentUser.Id, Name = currentUser.Name, role = currentUser.role });
         }
 

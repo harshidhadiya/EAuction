@@ -1,9 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "xWJKhkLqPwc=",
+  "dgSpecHash": "BR6/zBC3y5U=",
   "success": true,
   "projectFilePath": "/home/harshid/Project_Practice/_net/EAuction/MACUTION.csproj",
   "expectedPackageFiles": [
+    "/home/harshid/.nuget/packages/automapper/12.0.1/automapper.12.0.1.nupkg.sha512",
+    "/home/harshid/.nuget/packages/automapper.extensions.microsoft.dependencyinjection/12.0.1/automapper.extensions.microsoft.dependencyinjection.12.0.1.nupkg.sha512",
     "/home/harshid/.nuget/packages/azure.core/1.47.1/azure.core.1.47.1.nupkg.sha512",
     "/home/harshid/.nuget/packages/azure.identity/1.14.2/azure.identity.1.14.2.nupkg.sha512",
     "/home/harshid/.nuget/packages/fluentvalidation/12.1.1/fluentvalidation.12.1.1.nupkg.sha512",

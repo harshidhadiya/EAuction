@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using MACUTION.Data;
 using MACUTION.Middleware.AddEndpointFilter;
 using MACUTION.Model.Dto;
@@ -13,17 +14,20 @@ namespace MACUTION.Controllers
     [ServiceFilter(typeof(VerifiedAdminCanVerifyFilter))]
     public class verificationController : ControllerBase
     {
-        private MacutionDatabase db;
+        private readonly MacutionDatabase db;
+
+        private static readonly ConcurrentDictionary<int, SemaphoreSlim> _productVerificationLocks = new();
+
         public verificationController(MacutionDatabase db)
         {
             this.db = db;
         }
 
         [HttpGet("getallproduct")]
-        public ActionResult getAllProduct() => GetAllUnverifiedProducts();
+        public Task<ActionResult> getAllProduct() => GetAllUnverifiedProducts();
 
         [HttpGet("getallunverified")]
-        public ActionResult GetAllUnverifiedProducts()
+        public async Task<ActionResult> GetAllUnverifiedProducts()
         {
             var id = HttpContext.Items["id"];
             if (id == null)
@@ -34,12 +38,13 @@ namespace MACUTION.Controllers
             {
                 return BadRequest(new { status = "fail", message = "We Are not able to parse your id which is in the token" });
             }
-            var current_user = db.Users.Where(x => x.Id == userId).FirstOrDefault();
+            var current_user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);
             if (current_user == null)
             {
                 return BadRequest(new { status = "fail", message = "You are not exist here" });
             }
-            var last = db.Products
+            var last = await db.Products
+                .AsNoTracking()
                 .Include(x => x.user)
                 .Where(x => x.verifier == null || (x.verifier != null && !x.verifier.isverified))
                 .OrderByDescending(x => x.creation_date)
@@ -50,7 +55,7 @@ namespace MACUTION.Controllers
                     productname = x.product_name,
                     ownerDetails = x.user != null ? new supportClass(x.user.Id, x.user.Name, x.user.Email, x.user.Address, x.user.ProfileImageUrl) : null
                 })
-                .ToList();
+                .ToListAsync();
             if (last == null || last.Count == 0)
             {
                 return NoContent();
@@ -58,16 +63,16 @@ namespace MACUTION.Controllers
             return Ok(last);
         }
 
-        /// Get all products verified by you (current verified admin)
         [HttpGet("getallverifiedbyyou")]
-        public ActionResult GetAllVerifiedByYou()
+        public async Task<ActionResult> GetAllVerifiedByYou()
         {
             var userIdObj = HttpContext.Items["verified_admin_user_id"] ?? HttpContext.Items["id"];
             if (userIdObj == null || !int.TryParse(userIdObj.ToString(), out var verifierUserId))
             {
                 return BadRequest(new { status = "fail", message = "Could not determine verified admin identity." });
             }
-            var list = db.Products
+            var list = await db.Products
+                .AsNoTracking()
                 .Include(x => x.user)
                 .Include(x => x.verifier)
                 .Where(x => x.verifier != null && x.verifier.verifier_id == verifierUserId && x.verifier.isverified)
@@ -81,7 +86,7 @@ namespace MACUTION.Controllers
                     verificationDate = x.verifier!.verificationDate,
                     verificationDescription = x.verifier.description
                 })
-                .ToList();
+                .ToListAsync();
             if (list == null || list.Count == 0)
             {
                 return NoContent();
@@ -89,81 +94,94 @@ namespace MACUTION.Controllers
             return Ok(list);
         }
 
-        /// Verify a product. Only verified admins can call this. Creates a Verifier record and links it to the product
         [HttpPost("verify/product/{productId:int}")]
-        public ActionResult VerifyProduct(int productId, VerifyProductRequestDto? body = null)
+        public async Task<ActionResult> VerifyProduct(int productId, VerifyProductRequestDto? body = null)
         {
             var userIdObj = HttpContext.Items["verified_admin_user_id"] ?? HttpContext.Items["id"];
             if (userIdObj == null || !int.TryParse(userIdObj.ToString(), out var verifierUserId))
             {
                 return BadRequest(new { status = "fail", message = "Could not determine verified admin identity." });
             }
-            var product = db.Products.Include(p => p.verifier).FirstOrDefault(p => p.Id == productId);
-            if (product == null)
+            var sem = _productVerificationLocks.GetOrAdd(productId, _ => new SemaphoreSlim(1, 1));
+            await sem.WaitAsync(HttpContext.RequestAborted);
+            try
             {
-                return NotFound(new { status = "fail", message = $"Product with id {productId} not found." });
+                var product = await db.Products.Include(p => p.verifier).FirstOrDefaultAsync(p => p.Id == productId, HttpContext.RequestAborted);
+                if (product == null)
+                {
+                    return NotFound(new { status = "fail", message = $"Product with id {productId} not found." });
+                }
+                if (product.verifier != null && product.verifier.isverified)
+                {
+                    return BadRequest(new { status = "fail", message = "Product is already verified." });
+                }
+                string? description = body?.description;
+                if (product.verifier != null)
+                {
+                    product.verifier.isverified = true;
+                    product.verifier.verifier_id = verifierUserId;
+                    product.verifier.verificationDate = DateTime.UtcNow;
+                    product.verifier.description = description ?? product.verifier.description;
+                    db.verifiers.Update(product.verifier);
+                    await db.SaveChangesAsync(HttpContext.RequestAborted);
+                    return Ok(new { status = "success", message = "Product verified successfully.", productId, verifierId = product.verifier.Id });
+                }
+                var verifier = new Verifier
+                {
+                    product_id = productId,
+                    verifier_id = verifierUserId,
+                    isverified = true,
+                    verificationDate = DateTime.UtcNow,
+                    description = description ?? null
+                };
+                db.verifiers.Add(verifier);
+                await db.SaveChangesAsync(HttpContext.RequestAborted);
+                return Ok(new { status = "success", message = "Product verified successfully.", productId, verifierId = verifier.Id });
             }
-            if (product.verifier != null && product.verifier.isverified)
+            finally
             {
-                return BadRequest(new { status = "fail", message = "Product is already verified." });
+                sem.Release();
             }
-            string? description = body?.description;
-            if (product.verifier != null)
+        }
+
+        [HttpPost("unverify/product/{productId:int}")]
+        public async Task<ActionResult> unVerifyProduct(int productId, VerifyProductRequestDto? body = null)
+        {
+            var userIdObj = HttpContext.Items["verified_admin_user_id"] ?? HttpContext.Items["id"];
+            if (userIdObj == null || !int.TryParse(userIdObj.ToString(), out var verifierUserId))
             {
-                product.verifier.isverified = true;
+                return BadRequest(new { status = "fail", message = "Could not determine verified admin identity." });
+            }
+            var sem = _productVerificationLocks.GetOrAdd(productId, _ => new SemaphoreSlim(1, 1));
+            await sem.WaitAsync(HttpContext.RequestAborted);
+            try
+            {
+                var product = await db.Products.Include(p => p.verifier).FirstOrDefaultAsync(p => p.Id == productId, HttpContext.RequestAborted);
+                if (product == null)
+                {
+                    return NotFound(new { status = "fail", message = $"Product with id {productId} not found." });
+                }
+                if (product.verifier == null || !product.verifier.isverified)
+                {
+                    return BadRequest(new { status = "fail", message = "Product is already unverified." });
+                }
+                if (product.verifier.verifier_id != null && product.verifier.verifier_id != verifierUserId)
+                {
+                    return Unauthorized(new { status = "fail", message = "Sorry but you have not right to unverified this product " });
+                }
+                string? description = body?.description;
+                product.verifier.isverified = false;
                 product.verifier.verifier_id = verifierUserId;
                 product.verifier.verificationDate = DateTime.UtcNow;
                 product.verifier.description = description ?? product.verifier.description;
                 db.verifiers.Update(product.verifier);
-                db.SaveChanges();
-                return Ok(new { status = "success", message = "Product verified successfully.", productId, verifierId = product.verifier.Id });
+                await db.SaveChangesAsync(HttpContext.RequestAborted);
+                return Ok(new { status = "success", message = "Product unverified successfully.", productId, verifierId = product.verifier.Id });
             }
-            var verifier = new Verifier
+            finally
             {
-                product_id = productId,
-                verifier_id = verifierUserId,
-                isverified = true,
-                verificationDate = DateTime.UtcNow,
-                description = description ?? null
-            };
-            db.verifiers.Add(verifier);
-            db.SaveChanges();
-            return Ok(new { status = "success", message = "Product verified successfully.", productId, verifierId = verifier.Id });
-        }
-
-        // unverify Product
-
-        [HttpPost("unverify/product/{productId:int}")]
-        public ActionResult unVerifyProduct(int productId, VerifyProductRequestDto? body = null)
-        {
-            var userIdObj = HttpContext.Items["verified_admin_user_id"] ?? HttpContext.Items["id"];
-            if (userIdObj == null || !int.TryParse(userIdObj.ToString(), out var verifierUserId))
-            {
-                return BadRequest(new { status = "fail", message = "Could not determine verified admin identity." });
+                sem.Release();
             }
-            var product = db.Products.Include(p => p.verifier).FirstOrDefault(p => p.Id == productId);
-            if (product == null)
-            {
-                return NotFound(new { status = "fail", message = $"Product with id {productId} not found." });
-            }
-            if (product.verifier == null || !product.verifier.isverified)
-            {
-                return BadRequest(new { status = "fail", message = "Product is already unverified." });
-            }
-            
-            if (product.verifier.verifier_id != null && product.verifier.verifier_id!=verifierUserId)
-            return Unauthorized(new{status="fail",message="Sorry but you have not right to unverified this product "});
-
-
-            string? description = body?.description;
-            product.verifier.isverified = false;
-            product.verifier.verifier_id = verifierUserId;
-            product.verifier.verificationDate = DateTime.UtcNow;
-            product.verifier.description = description ?? product.verifier.description;
-            db.verifiers.Update(product.verifier);
-            db.SaveChanges();
-            return Ok(new { status = "success", message = "Product verified successfully.", productId, verifierId = product.verifier.Id });
-
         }
     }
 }
