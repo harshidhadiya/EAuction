@@ -1,4 +1,3 @@
-using Microsoft.Identity.Client;
 
 namespace MACUTION.Model.Dto
 {
@@ -25,5 +24,20 @@ namespace MACUTION.Model.Dto
         public string productname{get;set;}
         public DateTime buydate{get;set;}
         public supportClass ?ownerDetails{get;set;}
+    }
+
+    public class VerifyProductRequestDto
+    {
+        public string? description { get; set; }
+    }
+
+    public class VerifiedByYouProductResponse
+    {
+        public int Id { get; set; }
+        public string productname { get; set; } = "";
+        public DateTime buydate { get; set; }
+        public supportClass? ownerDetails { get; set; }
+        public DateTime verificationDate { get; set; }
+        public string? verificationDescription { get; set; }
     }
 }

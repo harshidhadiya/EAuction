@@ -140,10 +140,8 @@ namespace MACUTION.Controllers
             {
                 return BadRequest("May Be This Product Doesn't exist or You are not ownere of this product");
             }
-
             _db.Products.Remove(product);
             _db.SaveChanges();
-            
             return Ok(new { message = $"Deleted {product.product_name} success fully" });
         }
         [HttpPatch("updateproduct/{id}")]

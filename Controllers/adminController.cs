@@ -111,11 +111,7 @@ namespace MACUTION.Controllers
             {
                 return BadRequest("Current Id relate User Not Exist");
             }
-
-
             string tokens = "";
-
-
             if (!string.IsNullOrWhiteSpace(docs.Name))
             {
                 currentUser.Name = docs.Name;
@@ -310,26 +306,7 @@ namespace MACUTION.Controllers
 
             return Ok(user);
         }
-        // get all admin those who are requesting the to become the admin
-        [HttpGet("getallrequested")]
-        [Authorize(Policy = "admin")]
-        public ActionResult getRequestedAllUsers()
-        {
-            var id = HttpContext.Items["id"];
-            if (id == null)
-                return BadRequest(new { status = "fail", message = "sorry maybe you are unauthorized we are not able to find you" });
 
-            if (!int.TryParse(id.ToString(), out var userId)) return BadRequest(new { status = "fail", message = "Your Id in Token Is Not valid" });
-
-            Console.WriteLine("your user id" + userId);
-            var data = db.Users.Where(x => x.Id == userId).FirstOrDefault();
-            if (data == null)
-                return BadRequest(new { status = "fail", message = "You are Not Exist in the database" });
-
-            var user = db.Users.Include(x => x.request).Where(x => x.role == "ADMIN" && (x.request == null || x.request.verified_admin == false)).Select(x => new { id = x.Id, Name = x.Name, email = x.Email, mobile_no = x.MobileNumber, address = x.Address, imageurl = x.ProfileImageUrl, createdAt = x.createdAt, role = x.role }).FirstOrDefault();
-            if (user == null) return NoContent();
-            return Ok(user);
-        }
 
         // getAllVerifiedByU
         [HttpGet("verifiedbyme")]
@@ -352,7 +329,7 @@ namespace MACUTION.Controllers
                 imageurl = x.requet_person.ProfileImageUrl,
                 role = x.requet_person.role,
                 createdAt = x.requet_person.createdAt
-            }).OrderByDescending(x=>x.createdAt).DefaultIfEmpty();
+            }).OrderByDescending(x=>x.createdAt).ToList();
             if(last == null)
             return NoContent();
             return Ok(last);
@@ -365,7 +342,7 @@ namespace MACUTION.Controllers
         public ActionResult getUnverifiedByme()
         {
             var id = int.Parse(HttpContext.Items["id"].ToString());
-           var last=db.Users.Include(x=>x.request).Where(x => (x.request==null || x.request != null && x.request.verified_admin==false) ).Select(x => new
+           var last=db.Users.Include(x=>x.request).Where(x => ((x.request==null || x.request != null && x.request.verified_admin==false)&&x.right_to_add==false) ).Select(x => new
             {
                 x.Id,
                 x.Name,

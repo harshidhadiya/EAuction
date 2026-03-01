@@ -4,6 +4,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using MACUTION.Data;
 using MACUTION.Middleware;
+using MACUTION.Middleware.AddEndpointFilter;
 using MACUTION.Validators;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -52,6 +53,7 @@ builder.Services.AddAuthorization(policy =>
     policy.AddPolicy("admin", opt => opt.RequireRole("ADMIN"));
     policy.AddPolicy("user", option => option.RequireRole("USER"));
 });
+builder.Services.AddScoped<VerifiedAdminCanVerifyFilter>();
 
 var app = builder.Build();
 // // app.UseRouting();
